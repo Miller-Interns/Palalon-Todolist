@@ -1,62 +1,69 @@
 import { defineStore } from 'pinia';
-
-enum TaskStatus {
-  Pending = 'pending',
-  Completed = 'completed',
-  Editing = 'editing',
-}
-
-interface Task {
-  text: string;
-  completed: boolean;
-  status: TaskStatus;
-}
+import { TaskStatus } from '@/enums/TaskStatus';
+import type { Category, NewTaskMap } from '@/types/type';
 
 export const useTodoStore = defineStore('todoStore', {
   state: () => ({
     categories: JSON.parse(
-      localStorage.getItem('categories') || '{}'
-    ) as Record<string, Task[]>,
+      localStorage.getItem('categories') || '[]'
+    ) as Category[],
     newCategory: '',
-    newTask: {} as Record<string, string>,
+
+    newTask: {} as NewTaskMap,
   }),
   actions: {
     saveToLocalStorage() {
       localStorage.setItem('categories', JSON.stringify(this.categories));
     },
     addCategory() {
-      if (this.newCategory.trim() && !this.categories[this.newCategory]) {
-        this.categories[this.newCategory] = [];
+      const trimmed = this.newCategory.trim();
+      if (trimmed && !this.categories.find((cat) => cat.name === trimmed)) {
+        this.categories.push({ name: trimmed, tasks: [] });
         this.newCategory = '';
         this.saveToLocalStorage();
       }
     },
-    removeCategory(category: string) {
-      delete this.categories[category];
+    removeCategory(categoryName: string) {
+      this.categories = this.categories.filter(
+        (cat) => cat.name !== categoryName
+      );
       this.saveToLocalStorage();
     },
-    addTask(category: string) {
-      if (this.newTask[category]?.trim()) {
-        this.categories[category].push({
-          text: this.newTask[category],
-          completed: false,
-          status: TaskStatus.Pending,
-        });
-        this.newTask[category] = '';
+    addTask(categoryName: string) {
+      const taskText = this.newTask[categoryName]?.trim();
+      if (taskText) {
+        const cat = this.categories.find((cat) => cat.name === categoryName);
+        if (cat) {
+          cat.tasks.push({
+            text: taskText,
+            completed: false,
+            status: TaskStatus.Pending,
+          });
+          this.newTask[categoryName] = '';
+          this.saveToLocalStorage();
+        }
+      }
+    },
+    removeTask(categoryName: string, index: number) {
+      const cat = this.categories.find((cat) => cat.name === categoryName);
+      if (cat) {
+        cat.tasks.splice(index, 1);
         this.saveToLocalStorage();
       }
     },
-    removeTask(category: string, index: number) {
-      this.categories[category].splice(index, 1);
-      this.saveToLocalStorage();
+    editTask(categoryName: string, index: number) {
+      const cat = this.categories.find((cat) => cat.name === categoryName);
+      if (cat) {
+        cat.tasks[index].status = TaskStatus.Editing;
+        this.saveToLocalStorage();
+      }
     },
-    editTask(category: string, index: number) {
-      this.categories[category][index].status = TaskStatus.Editing;
-      this.saveToLocalStorage();
-    },
-    saveEdit(category: string, index: number) {
-      this.categories[category][index].status = TaskStatus.Pending;
-      this.saveToLocalStorage();
+    saveEdit(categoryName: string, index: number) {
+      const cat = this.categories.find((cat) => cat.name === categoryName);
+      if (cat) {
+        cat.tasks[index].status = TaskStatus.Pending;
+        this.saveToLocalStorage();
+      }
     },
   },
 });

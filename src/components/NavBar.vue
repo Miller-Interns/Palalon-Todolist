@@ -1,7 +1,12 @@
+<script setup lang="ts">
+import { RouteName } from '@/enums/RouteName';
+import { RouterLink } from 'vue-router';
+</script>
+
 <template>
   <nav class="navbar">
-    <router-link to="/">Home</router-link>
-    <router-link to="/todolist">Go to App</router-link>
+    <RouterLink :to="{ name: RouteName.HOME }">Home</RouterLink>
+    <RouterLink :to="{ name: RouteName.TODOLISTVIEW }">Go to App</RouterLink>
   </nav>
 </template>
 
